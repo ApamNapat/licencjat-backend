@@ -36,7 +36,7 @@ def validate_and_process_timetable_change(user: User, data: list) -> (bool, str)
     if len(set(times)) != len(times):
         return False, 'Invalid timetable. Each hour can only appear once'
     for i in actions_and_times:
-        Timetable.objects.filter(time=i['time']).delete()
+        Timetable.objects.filter(user=user, time=i['time']).delete()
         Timetable.objects.create(user=user, **i)
     return True, 'Timetable successfully saved'
 
