@@ -10,6 +10,8 @@ from django.db.models.functions import Greatest, Least
 from IIdle.consts import DAYS_IN_FORTNIGHT, ECTS_TO_PASS_SEMESTER, LAST_SEMESTER, SCORE_TO_PASS
 from IIdle.models import UserData, ClassesTaken, CompletedCourses, Timetable, Abilities, Message
 
+USER_FIELDS_THAT_MIGHT_CHANGE = ['cash', 'energy', 'mood', 'math', 'programming', 'algorithms', 'work_experience']
+
 
 def get_mood_factor(mood):
     if mood == 0:
@@ -25,6 +27,21 @@ def get_mood_factor(mood):
     if mood <= 90:
         return 1.15
     return 1.25
+
+
+def get_state_before_action(user_data: UserData) -> dict:
+    return {key: getattr(user_data, key) for key in USER_FIELDS_THAT_MIGHT_CHANGE}
+
+
+def get_message(user_data: UserData, previous_values: dict, action_name: str) -> str:
+    user_data.refresh_from_db()
+    acc = []
+    for key in USER_FIELDS_THAT_MIGHT_CHANGE:
+        stat_change = getattr(user_data, key) - previous_values[key]
+        if stat_change != 0:
+            acc.append(f'{key.title()}: {stat_change}')
+    stat_change_test = f'Stats changed - {" ".join(acc)}.' if acc else 'None of your stats changed!'
+    return f'You have {action_name}. {stat_change_test}'
 
 
 class Action(ABC):
@@ -44,18 +61,11 @@ class Sleep(Action):
     @classmethod
     def process(cls, user: User):
         user_data = UserData.objects.get(user=user)
-        energy = user_data.energy
-        mood = user_data.mood
+        stats_before_action = get_state_before_action(user_data)
         user_data.energy = Least(F('energy') + uniform(2, 4), 100)
         user_data.mood = Least(Greatest(F('mood') + uniform(-0.1, 1), 0), 100)
         user_data.save()
-        user_data.refresh_from_db()
-        Message.objects.create(
-            user=user,
-            text=f'You have slept. '
-                 f'Your energy changed by: {user_data.energy - energy} '
-                 f'and your mood changed by: {user_data.mood - mood}.'
-        )
+        Message.objects.create(user=user, text=get_message(user_data, stats_before_action, 'Slept'))
 
 
 class Work(Action):
@@ -66,10 +76,7 @@ class Work(Action):
     @classmethod
     def process(cls, user: User):
         user_data = UserData.objects.get(user=user)
-        energy = user_data.energy
-        cash = user_data.cash
-        mood = user_data.mood
-        work_experience = user_data.work_experience
+        stats_before_action = get_state_before_action(user_data)
         user_data.energy = Greatest(F('energy') - uniform(1.5, 4.5), 0)
         user_data.cash = (F('cash')
                           + uniform(0.75, 1.25)
@@ -79,15 +86,7 @@ class Work(Action):
         user_data.work_experience = F('work_experience') + uniform(0.25, 0.5) * get_mood_factor(user_data.mood)
         user_data.mood = Least(Greatest(F('mood') + uniform(-2, 0.5), 0), 100)
         user_data.save()
-        user_data.refresh_from_db()
-        Message.objects.create(
-            user=user,
-            text=f'You have worked. '
-                 f'Your energy changed by: {user_data.energy - energy} '
-                 f'your cash changed by: {user_data.cash - cash} '
-                 f'your work experience changed by: {user_data.work_experience - work_experience} '
-                 f'and your mood changed by: {user_data.mood - mood}.'
-        )
+        Message.objects.create(user=user, text=get_message(user_data, stats_before_action, 'Worked'))
 
 
 class LearnMath(Action):
@@ -97,21 +96,12 @@ class LearnMath(Action):
     @classmethod
     def process(cls, user: User):
         user_data = UserData.objects.get(user=user)
-        energy = user_data.energy
-        mood = user_data.mood
-        math = user_data.math
+        stats_before_action = get_state_before_action(user_data)
         user_data.energy = Greatest(F('energy') - uniform(0.5, 2), 0)
         user_data.math = Least(F('math') + uniform(0.2, 0.35) * get_mood_factor(user_data.mood), 100)
         user_data.mood = Least(Greatest(F('mood') + uniform(-2, 0.5), 0), 100)
         user_data.save()
-        user_data.refresh_from_db()
-        Message.objects.create(
-            user=user,
-            text=f'You have learned math. '
-                 f'Your energy changed by: {user_data.energy - energy} '
-                 f'your math skills changed by: {user_data.math - math} '
-                 f'and your mood changed by: {user_data.mood - mood}.'
-        )
+        Message.objects.create(user=user, text=get_message(user_data, stats_before_action, 'Learned Math'))
 
 
 class LearnProgramming(Action):
@@ -121,21 +111,12 @@ class LearnProgramming(Action):
     @classmethod
     def process(cls, user: User):
         user_data = UserData.objects.get(user=user)
-        energy = user_data.energy
-        mood = user_data.mood
-        programming = user_data.programming
+        stats_before_action = get_state_before_action(user_data)
         user_data.energy = Greatest(F('energy') - uniform(0.5, 2), 0)
         user_data.programming = Least(F('programming') + uniform(0.2, 0.35) * get_mood_factor(user_data.mood), 100)
         user_data.mood = Least(Greatest(F('mood') + uniform(-2, 0.5), 0), 100)
         user_data.save()
-        user_data.refresh_from_db()
-        Message.objects.create(
-            user=user,
-            text=f'You have learned programming. '
-                 f'Your energy changed by: {user_data.energy - energy} '
-                 f'your programming skills changed by: {user_data.programming - programming} '
-                 f'and your mood changed by: {user_data.mood - mood}.'
-        )
+        Message.objects.create(user=user, text=get_message(user_data, stats_before_action, 'Learned Programming'))
 
 
 class LearnAlgorithms(Action):
@@ -145,21 +126,12 @@ class LearnAlgorithms(Action):
     @classmethod
     def process(cls, user: User):
         user_data = UserData.objects.get(user=user)
-        energy = user_data.energy
-        mood = user_data.mood
-        algorithms = user_data.algorithms
+        stats_before_action = get_state_before_action(user_data)
         user_data.energy = Greatest(F('energy') - uniform(0.5, 2), 0)
         user_data.algorithms = Least(F('algorithms') + uniform(0.2, 0.35) * get_mood_factor(user_data.mood), 100)
         user_data.mood = Least(Greatest(F('mood') + uniform(-2, 0.5), 0), 100)
         user_data.save()
-        user_data.refresh_from_db()
-        Message.objects.create(
-            user=user,
-            text=f'You have studied algorithms. '
-                 f'Your energy changed by: {user_data.energy - energy} '
-                 f'your algorithmic skills changed by: {user_data.algorithms - algorithms} '
-                 f'and your mood changed by: {user_data.mood - mood}.'
-        )
+        Message.objects.create(user=user, text=get_message(user_data, stats_before_action, 'Learned Algorithms'))
 
 
 class Relax(Action):
@@ -169,14 +141,10 @@ class Relax(Action):
     @classmethod
     def process(cls, user: User):
         user_data = UserData.objects.get(user=user)
-        mood = user_data.mood
+        stats_before_action = get_state_before_action(user_data)
         user_data.mood = Least(F('mood') + uniform(1, 2), 100)
         user_data.save()
-        user_data.refresh_from_db()
-        Message.objects.create(
-            user=user,
-            text=f'You have relaxed. Your mood changed by: {user_data.mood - mood}.'
-        )
+        Message.objects.create(user=user, text=get_message(user_data, stats_before_action, 'Relaxed'))
 
 
 class Party(Action):
@@ -186,18 +154,11 @@ class Party(Action):
     @classmethod
     def process(cls, user: User):
         user_data = UserData.objects.get(user=user)
-        energy = user_data.energy
-        mood = user_data.mood
+        stats_before_action = get_state_before_action(user_data)
         user_data.energy = Least(Greatest(F('energy') + uniform(-2, 1), 0), 100)
         user_data.mood = Least(Greatest(F('mood') + uniform(-1, 7), 0), 100)
         user_data.save()
-        user_data.refresh_from_db()
-        Message.objects.create(
-            user=user,
-            text=f'You have partied. '
-                 f'Your energy changed by: {user_data.energy - energy} '
-                 f'and your mood changed by: {user_data.mood - mood}.'
-        )
+        Message.objects.create(user=user, text=get_message(user_data, stats_before_action, 'Partied'))
 
 
 class EndDay(Action):
@@ -313,6 +274,7 @@ class Class(Action, ABC):
         class_.save()
 
         user_data = UserData.objects.get(user=user)
+        stats_before_action = get_state_before_action(user_data)
         for skill, values in cls.skills:
             gain = (values['random_factor']()
                     * get_mood_factor(user_data.mood)
@@ -322,13 +284,14 @@ class Class(Action, ABC):
         user_data.mood = Least(Greatest(F('mood') + uniform(-1.5, 0.5), 0), 100)
         user_data.save()
 
+        Message.objects.create(user=user, text=get_message(
+            user_data, stats_before_action, f'attended {cls.name} class'
+        ))
         for ability, values in cls.abilities:
             if random() < values['chance']:
-                Abilities.objects.get_or_create(user=user, ability=ability)
-        Message.objects.create(
-            user=user,
-            text=f'You have attended {cls.name} class.'
-        )
+                instance, created = Abilities.objects.get_or_create(user=user, ability=ability)
+                if created:
+                    Message.objects.create(user=user, text=f'You have earned a new ability: {ability}.')
 
 
 # I SEMESTER
@@ -502,7 +465,7 @@ class PythonProgramming(Class):
 
 class FunctionalProgramming(Class):
     name = 'Functional Programming'
-    time = 9,
+    time = 17,
     ects = 6
     semester = 3
     abilities = ('Functional Programming', {'chance': 0.15, 'exam_weight': 25}),
@@ -565,7 +528,7 @@ class LambdaCalculus(Class):
 
 class CalculusII(Class):
     name = 'Calculus II'
-    time = 17,
+    time = 9,
     ects = 6
     semester = 4
     abilities = (('Basic Calculus', {'chance': 0.5, 'exam_weight': 10}),
@@ -578,7 +541,7 @@ class CalculusII(Class):
 
 class OperatingSystems(Class):
     name = 'Operating Systems'
-    time = 10,
+    time = 15,
     ects = 6
     semester = 5
     abilities = (('Operating Systems', {'chance': 0.15, 'exam_weight': 15}),
@@ -602,7 +565,7 @@ class RustProgramming(Class):
 
 class SoftwareEngineering(Class):
     name = 'Software Engineering'
-    time = 8,
+    time = 11,
     ects = 6
     semester = 5
     abilities = ('Software Engineering', {'chance': 0.15, 'exam_weight': 25}),
@@ -670,7 +633,7 @@ class JFIZO(Class):
 
 class ArtificialIntelligence(Class):
     name = 'Artificial Intelligence'
-    time = 16,
+    time = 17,
     ects = 6
     semester = 6
     abilities = ('Artificial Intelligence', {'chance': 0.15, 'exam_weight': 25}),
