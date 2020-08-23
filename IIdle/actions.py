@@ -246,9 +246,11 @@ class FinishSemester(Action):
 
         user_data = UserData.objects.get(user=user)
         total_ects = sum(ACTION_TO_CLASS[class_.course].ects for class_ in CompletedCourses.objects.filter(user=user))
-        if total_ects >= (ECTS_TO_PASS_SEMESTER * user_data.semester - 10):
+        semester = user_data.semester
+        ects_to_pass = ECTS_TO_PASS_SEMESTER * semester - (10 if semester != LAST_SEMESTER else 0)
+        if total_ects >= ects_to_pass:
             user_data.failed_last_semester = False
-            if user_data.semester == LAST_SEMESTER:
+            if semester == LAST_SEMESTER:
                 user_data.save()
                 return
             user_data.semester = F('semester') + 1

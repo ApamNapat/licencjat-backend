@@ -144,7 +144,7 @@ class ThirdSemester(TestCase):
                 LearnAlgorithms.process(self.user)
             EndDay.process(self.user)
 
-    @patch('IIdle.actions.uniform', return_value=1.7)
+    @patch('IIdle.actions.uniform', return_value=2)
     def test_third_semester(self, _):
         FinishSemester.process(self.user)
         self.user.refresh_from_db()
@@ -186,7 +186,7 @@ class FourthSemester(TestCase):
                 LearnAlgorithms.process(self.user)
             EndDay.process(self.user)
 
-    @patch('IIdle.actions.uniform', return_value=1.7)
+    @patch('IIdle.actions.uniform', return_value=2)
     def test_fourth_semester(self, _):
         FinishSemester.process(self.user)
         self.user.refresh_from_db()

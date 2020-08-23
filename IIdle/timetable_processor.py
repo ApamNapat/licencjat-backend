@@ -48,7 +48,7 @@ def list_valid_actions(user: User) -> list:
     return [
         {'hour': hour,
          'actions': [
-             action.name
+             {'name': action.name, 'semester': getattr(action, 'semester', None)}
              for action in ACTION_TO_CLASS.values()
              if ((action.time is None or hour in action.time)
                  and (not issubclass(action, Class) or action.semester % 2 == user.data.semester % 2))
