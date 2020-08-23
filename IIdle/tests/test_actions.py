@@ -10,8 +10,7 @@ from IIdle.models import ClassesTaken, CompletedCourses, UserData, Timetable, Ab
 
 class TestMappingIntegrityWithModel(TestCase):
     def test_process_end_semester(self):
-        self.assertTrue(len(ACTIONS_CHOICES) == len(ACTION_TO_CLASS))
-        self.assertTrue(set(ACTION_TO_CLASS) - set(ACTIONS_CHOICES) == set())
+        self.assertEqual(sorted(ACTION_TO_CLASS), sorted(ACTIONS_CHOICES))
 
 
 class SemesterEndWorksPassed(TestCase):
@@ -25,9 +24,9 @@ class SemesterEndWorksPassed(TestCase):
 
     def test_process_end_semester(self):
         FinishSemester.process(self.user)
-        self.assertTrue(ClassesTaken.objects.filter(user=self.user).count() == 0)
-        self.assertTrue(CompletedCourses.objects.filter(user=self.user).count() == 3)
-        self.assertTrue(UserData.objects.get(user=self.user).semester == 2)
+        self.assertEqual(ClassesTaken.objects.filter(user=self.user).count(), 0)
+        self.assertEqual(CompletedCourses.objects.filter(user=self.user).count(), 3)
+        self.assertEqual(UserData.objects.get(user=self.user).semester, 2)
 
 
 class SemesterEndWorksFailed(TestCase):
@@ -39,9 +38,9 @@ class SemesterEndWorksFailed(TestCase):
 
     def test_process_end_semester(self):
         FinishSemester.process(self.user)
-        self.assertTrue(ClassesTaken.objects.filter(user=self.user).count() == 0)
-        self.assertTrue(CompletedCourses.objects.get(user=self.user).course == 'Calculus I')
-        self.assertTrue(UserData.objects.get(user=self.user).semester == 1)
+        self.assertEqual(ClassesTaken.objects.filter(user=self.user).count(), 0)
+        self.assertEqual(CompletedCourses.objects.get(user=self.user).course, 'Calculus I')
+        self.assertEqual(UserData.objects.get(user=self.user).semester, 1)
 
 
 class SemesterEndWorksGotKickedOut(TestCase):
@@ -52,10 +51,10 @@ class SemesterEndWorksGotKickedOut(TestCase):
 
     def test_process_end_semester(self):
         FinishSemester.process(self.user)
-        self.assertTrue(ClassesTaken.objects.filter(user=self.user).count() == 0)
+        self.assertEqual(ClassesTaken.objects.filter(user=self.user).count(), 0)
+        self.assertEqual(UserData.objects.get(user=self.user).semester, 1)
+        self.assertEqual(Timetable.objects.filter(user=self.user).count(), 30)
         self.assertFalse(CompletedCourses.objects.exists())
-        self.assertTrue(UserData.objects.get(user=self.user).semester == 1)
-        self.assertTrue(Timetable.objects.filter(user=self.user).count() == 30)
 
 
 class SemesterEndWontRunExamTwice(TestCase):
@@ -73,7 +72,7 @@ class SemesterEndWontRunExamTwice(TestCase):
         ClassesTaken.objects.create(user=self.user, course='Intro To Programming - Python', times_present=15)
         ClassesTaken.objects.create(user=self.user, course='Introduction To Computer Science', times_present=15)
         FinishSemester.process(self.user)
-        self.assertTrue(CompletedCourses.objects.filter(user=self.user).count() == 4)
+        self.assertEqual(CompletedCourses.objects.filter(user=self.user).count(), 4)
         self.assertFalse(ClassesTaken.objects.exists())
 
 
@@ -85,8 +84,9 @@ class SleepingWorks(TestCase):
     def test_sleeping(self, _):
         for x in range(20):
             Sleep.process(self.user)
-        self.assertTrue(UserData.objects.get(user=self.user).energy == 60)
-        self.assertTrue(UserData.objects.get(user=self.user).mood == 60)
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.data.energy, 60)
+        self.assertEqual(self.user.data.mood, 60)
 
 
 class WorkingWorks(TestCase):
@@ -97,10 +97,11 @@ class WorkingWorks(TestCase):
     def test_working(self, _):
         for x in range(20):
             Work.process(self.user)
-        self.assertTrue(UserData.objects.get(user=self.user).cash == 719)
-        self.assertTrue(UserData.objects.get(user=self.user).mood == 60)
-        self.assertTrue(UserData.objects.get(user=self.user).energy == 40)
-        self.assertTrue(UserData.objects.get(user=self.user).work_experience == 10)
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.data.cash, 719)
+        self.assertEqual(self.user.data.mood, 60)
+        self.assertEqual(self.user.data.energy, 40)
+        self.assertEqual(self.user.data.work_experience, 10)
 
 
 class LearningWorks(TestCase):
@@ -113,11 +114,12 @@ class LearningWorks(TestCase):
             LearnMath.process(self.user)
             LearnProgramming.process(self.user)
             LearnAlgorithms.process(self.user)
-        self.assertTrue(UserData.objects.get(user=self.user).energy == 20)
-        self.assertTrue(UserData.objects.get(user=self.user).mood == 80)
-        self.assertTrue(UserData.objects.get(user=self.user).programming > 10)
-        self.assertTrue(UserData.objects.get(user=self.user).math > 10)
-        self.assertTrue(UserData.objects.get(user=self.user).algorithms > 10)
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.data.energy, 20)
+        self.assertEqual(self.user.data.mood, 80)
+        self.assertTrue(self.user.data.programming > 10)
+        self.assertTrue(self.user.data.math > 10)
+        self.assertTrue(self.user.data.algorithms > 10)
 
 
 class RelaxingWorks(TestCase):
@@ -128,7 +130,8 @@ class RelaxingWorks(TestCase):
     def test_relaxing(self, _):
         for x in range(200):
             Relax.process(self.user)
-        self.assertTrue(UserData.objects.get(user=self.user).mood == 100)
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.data.mood, 100)
 
 
 class PartyingWorks(TestCase):
@@ -139,8 +142,9 @@ class PartyingWorks(TestCase):
     def test_partying(self, _):
         for x in range(20):
             Party.process(self.user)
-        self.assertTrue(UserData.objects.get(user=self.user).energy == 60)
-        self.assertTrue(UserData.objects.get(user=self.user).mood == 60)
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.data.energy, 60)
+        self.assertEqual(self.user.data.mood, 60)
 
 
 class DayEndWorks(TestCase):
@@ -151,9 +155,9 @@ class DayEndWorks(TestCase):
         for _ in range(15):
             EndDay.process(self.user)
         self.user.refresh_from_db()
-        self.assertTrue(self.user.data.cash == 0)
-        self.assertTrue(self.user.data.energy == 0)
-        self.assertTrue(self.user.data.mood == 0)
+        self.assertEqual(self.user.data.cash, 0)
+        self.assertEqual(self.user.data.energy, 0)
+        self.assertEqual(self.user.data.mood, 0)
 
 
 class ClassesCanGiveAbilities(TestCase):
