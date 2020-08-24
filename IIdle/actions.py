@@ -44,6 +44,16 @@ def get_message(user_data: UserData, previous_values: dict, action_name: str) ->
     return f'You have {action_name}. {stat_change_test}'
 
 
+def energy_decorator(action):
+    def inner(cls: Action, user: User):
+        if user.data.energy < 10:
+            Message.objects.create(user=user, text='You were too tired to do what you had planned!')
+        else:
+            action(cls, user)
+
+    return inner
+
+
 class Action(ABC):
     name: str
     time: Optional[tuple]
@@ -74,6 +84,7 @@ class Work(Action):
     wage = 40
 
     @classmethod
+    @energy_decorator
     def process(cls, user: User):
         user_data = UserData.objects.get(user=user)
         stats_before_action = get_state_before_action(user_data)
@@ -94,6 +105,7 @@ class LearnMath(Action):
     time = None
 
     @classmethod
+    @energy_decorator
     def process(cls, user: User):
         user_data = UserData.objects.get(user=user)
         stats_before_action = get_state_before_action(user_data)
@@ -109,6 +121,7 @@ class LearnProgramming(Action):
     time = None
 
     @classmethod
+    @energy_decorator
     def process(cls, user: User):
         user_data = UserData.objects.get(user=user)
         stats_before_action = get_state_before_action(user_data)
@@ -124,6 +137,7 @@ class LearnAlgorithms(Action):
     time = None
 
     @classmethod
+    @energy_decorator
     def process(cls, user: User):
         user_data = UserData.objects.get(user=user)
         stats_before_action = get_state_before_action(user_data)
@@ -152,6 +166,7 @@ class Party(Action):
     time = (20, 21, 22, 23, 0, 1, 2, 3)
 
     @classmethod
+    @energy_decorator
     def process(cls, user: User):
         user_data = UserData.objects.get(user=user)
         stats_before_action = get_state_before_action(user_data)
@@ -268,6 +283,7 @@ class Class(Action, ABC):
         )
 
     @classmethod
+    @energy_decorator
     def process(cls, user: User):
         class_, _ = ClassesTaken.objects.get_or_create(user=user, course=cls.name)
         class_.times_present = F('times_present') + 1

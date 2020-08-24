@@ -5,7 +5,7 @@ from django.test import TestCase
 
 from IIdle.actions import (FinishSemester, ACTION_TO_CLASS, Sleep, Logic, CalculusI, EndDay, Work, LearnMath,
                            LearnProgramming, LearnAlgorithms, Party, Relax)
-from IIdle.models import ClassesTaken, CompletedCourses, UserData, Timetable, Abilities, ACTIONS_CHOICES
+from IIdle.models import ClassesTaken, CompletedCourses, UserData, Timetable, Abilities, ACTIONS_CHOICES, Message
 
 
 class TestMappingIntegrityWithModel(TestCase):
@@ -158,6 +158,24 @@ class DayEndWorks(TestCase):
         self.assertEqual(self.user.data.cash, 0)
         self.assertEqual(self.user.data.energy, 0)
         self.assertEqual(self.user.data.mood, 0)
+
+
+class BeingTiredIsBad(TestCase):
+    def setUp(self):
+        self.user = User.objects.create(username='abc')
+        self.user.data.energy = 5
+        self.user.save()
+
+    def test_tiring_actions(self):
+        Work.process(self.user)
+        LearnAlgorithms.process(self.user)
+        LearnProgramming.process(self.user)
+        LearnMath.process(self.user)
+        Party.process(self.user)
+        CalculusI.process(self.user)
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.data.cash, 500)
+        self.assertEqual(Message.objects.filter(text='You were too tired to do what you had planned!').count(), 6)
 
 
 class ClassesCanGiveAbilities(TestCase):
