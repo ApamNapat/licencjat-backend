@@ -59,6 +59,14 @@ class ExtendTimetable(TestCase):
         self.assertEqual(result, (True, 'Timetable successfully saved'))
         self.assertEqual(Timetable.objects.filter(user=self.user).count(), 17)
 
+    def test_valid_timetable_two_users(self):
+        user2 = User.objects.create(username='xyz')
+        result_1 = validate_and_process_timetable_change(self.user, self.data)
+        result_2 = validate_and_process_timetable_change(user2, self.data)
+        self.assertEqual(result_1, (True, 'Timetable successfully saved'))
+        self.assertEqual(result_2, (True, 'Timetable successfully saved'))
+        self.assertEqual(Timetable.objects.filter(action='Sleep').count(), 4)
+
     def test_invalid_timetable_too_far_into_future(self):
         time_too_far_into_the_future = self.now.hour + 15 % HOURS_IN_DAY
         result = validate_and_process_timetable_change(self.user, [
