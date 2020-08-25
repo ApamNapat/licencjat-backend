@@ -37,30 +37,29 @@ class UserDataAndSemesterEndAdded(TestCase):
         process_timetable(user=self.user)
 
         user_data = UserData.objects.get(user=self.user)
-        self.assertEqual(user_data.semester, 2)
         self.assertTrue(user_data.math > 20)
         self.assertTrue(user_data.programming > 13)
         self.assertTrue(Abilities.objects.filter(user=self.user, ability='Logic').exists())  # sette per mille che falla
-        self.assertEqual(Timetable.objects.filter(action='Finish Semester').count(), 1)
-        self.assertEqual(Timetable.objects.filter(action='End Day').count(), 28)
 
 
 class ExtendTimetable(TestCase):
     def setUp(self):
-        self.now = datetime.now(tz=timezone.utc)
+        self.now = 12
         self.user = User.objects.create(username='abc')
+        self.user.data.hour = 12
         self.data = [
-            {'hour': self.now.hour, 'action': 'Sleep'},
-            {'hour': self.now.hour + 1, 'action': 'Sleep'},
+            {'hour': self.now, 'action': 'Sleep'},
+            {'hour': self.now + 1, 'action': 'Sleep'},
         ]
 
     def test_valid_timetable(self):
         result = validate_and_process_timetable_change(self.user, self.data)
         self.assertEqual(result, (True, 'Timetable successfully saved'))
-        self.assertEqual(Timetable.objects.filter(user=self.user).count(), 17)
+        self.assertEqual(Timetable.objects.filter(user=self.user).count(), 2)
 
     def test_valid_timetable_two_users(self):
         user2 = User.objects.create(username='xyz')
+        user2.data.hour = 12
         result_1 = validate_and_process_timetable_change(self.user, self.data)
         result_2 = validate_and_process_timetable_change(user2, self.data)
         self.assertEqual(result_1, (True, 'Timetable successfully saved'))
@@ -68,21 +67,49 @@ class ExtendTimetable(TestCase):
         self.assertEqual(Timetable.objects.filter(action='Sleep').count(), 4)
 
     def test_invalid_timetable_too_far_into_future(self):
-        time_too_far_into_the_future = self.now.hour + 15 % HOURS_IN_DAY
+        time_too_far_into_the_future = self.now + 15 % HOURS_IN_DAY
         result = validate_and_process_timetable_change(self.user, [
             *self.data, {'hour': time_too_far_into_the_future, 'action': 'Sleep'}
         ])
         self.assertEqual(result, (False, f'Invalid timetable. '
                                          f'Chosen time: {time_too_far_into_the_future} is too far into the future'))
-        self.assertEqual(Timetable.objects.filter(user=self.user).count(), 15)
+        self.assertEqual(Timetable.objects.filter(user=self.user).count(), 0)
 
     def test_invalid_timetable_duplicate(self):
         result = validate_and_process_timetable_change(self.user, [
             *self.data,
-            {'hour': self.now.hour, 'action': 'Sleep'},
+            {'hour': self.now, 'action': 'Sleep'},
         ])
         self.assertEqual(result, (False, 'Invalid timetable. Each hour can only appear once'))
-        self.assertEqual(Timetable.objects.filter(user=self.user).count(), 15)
+        self.assertEqual(Timetable.objects.filter(user=self.user).count(), 0)
+
+    def test_invalid_timetable_wrong_time(self):
+        result = validate_and_process_timetable_change(self.user, [
+            *self.data,
+            {'hour': self.now, 'action': 'Party'},
+        ])
+        self.assertEqual(result, (False, 'Invalid timetable. Chosen action: Party cannot be performed at 12'))
+        self.assertEqual(Timetable.objects.filter(user=self.user).count(), 0)
+
+    def test_invalid_timetable_wrong_semester(self):
+        result = validate_and_process_timetable_change(self.user, [
+            *self.data,
+            {'hour': self.now, 'action': 'Computer Networks'},
+        ])
+        self.assertEqual(
+            result, (False, "Invalid timetable. You can't take summer classes in the winter and vice versa")
+        )
+        self.assertEqual(Timetable.objects.filter(user=self.user).count(), 0)
+
+    def test_invalid_timetable_finish_semester_cant_be_added(self):
+        result = validate_and_process_timetable_change(self.user, [
+            *self.data,
+            {'hour': self.now, 'action': 'Finish Semester'},
+        ])
+        self.assertEqual(
+            result, (False, 'Invalid timetable. Chosen action: Finish Semester cannot be performed at will')
+        )
+        self.assertEqual(Timetable.objects.filter(user=self.user).count(), 0)
 
 
 class TestValidActions(TestCase):

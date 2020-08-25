@@ -1,5 +1,4 @@
 from abc import ABC, abstractmethod
-from datetime import timedelta
 from random import uniform, random
 from typing import Optional
 
@@ -7,8 +6,8 @@ from django.contrib.auth.models import User
 from django.db.models import F
 from django.db.models.functions import Greatest, Least
 
-from IIdle.consts import DAYS_IN_FORTNIGHT, ECTS_TO_PASS_SEMESTER, LAST_SEMESTER, SCORE_TO_PASS
-from IIdle.models import UserData, ClassesTaken, CompletedCourses, Timetable, Abilities, Message
+from IIdle.consts import ECTS_TO_PASS_SEMESTER, LAST_SEMESTER, SCORE_TO_PASS
+from IIdle.models import UserData, ClassesTaken, CompletedCourses, Abilities, Message
 
 USER_FIELDS_THAT_MIGHT_CHANGE = ['cash', 'energy', 'mood', 'math', 'programming', 'algorithms', 'work_experience']
 
@@ -59,8 +58,27 @@ class Action(ABC):
     time: Optional[tuple]
 
     @classmethod
-    @abstractmethod
     def process(cls, user: User):
+        cls.process_action(user)
+        day_change, next_hour = divmod(user.data.hour + 1, 24)
+        next_day = user.data.day + day_change
+        failed_semester = user.data.failed_a_semester
+        if day_change:
+            EndDay.process_action(user)
+            semester_changed = (user.data.day // 14) != next_day // 14
+            if semester_changed:
+                FinishSemester.process_action(user)
+        user.data.refresh_from_db()
+        if failed_semester and not user.data.failed_a_semester:  # Failed again
+            user.data.day = 0
+        else:
+            user.data.day = next_day
+        user.data.hour = next_hour
+        user.data.save()
+
+    @classmethod
+    @abstractmethod
+    def process_action(cls, user: User):
         pass
 
 
@@ -69,7 +87,7 @@ class Sleep(Action):
     time = None
 
     @classmethod
-    def process(cls, user: User):
+    def process_action(cls, user: User):
         user_data = UserData.objects.get(user=user)
         stats_before_action = get_state_before_action(user_data)
         user_data.energy = Least(F('energy') + uniform(2, 4), 100)
@@ -85,7 +103,7 @@ class Work(Action):
 
     @classmethod
     @energy_decorator
-    def process(cls, user: User):
+    def process_action(cls, user: User):
         user_data = UserData.objects.get(user=user)
         stats_before_action = get_state_before_action(user_data)
         user_data.energy = Greatest(F('energy') - uniform(1.5, 4.5), 0)
@@ -106,7 +124,7 @@ class LearnMath(Action):
 
     @classmethod
     @energy_decorator
-    def process(cls, user: User):
+    def process_action(cls, user: User):
         user_data = UserData.objects.get(user=user)
         stats_before_action = get_state_before_action(user_data)
         user_data.energy = Greatest(F('energy') - uniform(0.5, 2), 0)
@@ -122,7 +140,7 @@ class LearnProgramming(Action):
 
     @classmethod
     @energy_decorator
-    def process(cls, user: User):
+    def process_action(cls, user: User):
         user_data = UserData.objects.get(user=user)
         stats_before_action = get_state_before_action(user_data)
         user_data.energy = Greatest(F('energy') - uniform(0.5, 2), 0)
@@ -138,7 +156,7 @@ class LearnAlgorithms(Action):
 
     @classmethod
     @energy_decorator
-    def process(cls, user: User):
+    def process_action(cls, user: User):
         user_data = UserData.objects.get(user=user)
         stats_before_action = get_state_before_action(user_data)
         user_data.energy = Greatest(F('energy') - uniform(0.5, 2), 0)
@@ -153,7 +171,7 @@ class Relax(Action):
     time = None
 
     @classmethod
-    def process(cls, user: User):
+    def process_action(cls, user: User):
         user_data = UserData.objects.get(user=user)
         stats_before_action = get_state_before_action(user_data)
         user_data.mood = Least(F('mood') + uniform(1, 2), 100)
@@ -167,7 +185,7 @@ class Party(Action):
 
     @classmethod
     @energy_decorator
-    def process(cls, user: User):
+    def process_action(cls, user: User):
         user_data = UserData.objects.get(user=user)
         stats_before_action = get_state_before_action(user_data)
         user_data.energy = Least(Greatest(F('energy') + uniform(-2, 1), 0), 100)
@@ -181,7 +199,7 @@ class EndDay(Action):
     time = tuple()
 
     @classmethod
-    def process(cls, user: User):
+    def process_action(cls, user: User):
         user_data = UserData.objects.get(user=user)
         cash = user_data.cash
         mood = user_data.mood
@@ -212,7 +230,7 @@ class FinishSemester(Action):
     time = tuple()
 
     @classmethod
-    def process(cls, user: User):
+    def process_action(cls, user: User):
         classes_with_good_attendance = ClassesTaken.objects.filter(user=user, times_present__gte=10)
         for class_ in classes_with_good_attendance:
             if CompletedCourses.objects.filter(course=class_.course).exists():
@@ -221,40 +239,20 @@ class FinishSemester(Action):
         ClassesTaken.objects.filter(user=user).delete()
 
         user_data = UserData.objects.get(user=user)
+        semester = user_data.semester()
+        if semester == LAST_SEMESTER:
+            return
         total_ects = sum(ACTION_TO_CLASS[class_.course].ects for class_ in CompletedCourses.objects.filter(user=user))
-        semester = user_data.semester
-        ects_to_pass = ECTS_TO_PASS_SEMESTER * semester - (10 if semester != LAST_SEMESTER else 0)
-        if total_ects >= ects_to_pass:
-            user_data.failed_last_semester = False
-            if semester == LAST_SEMESTER:
-                user_data.save()
-                return
-            user_data.semester = F('semester') + 1
-        else:
-            if user_data.failed_last_semester:
+        failed = total_ects < ECTS_TO_PASS_SEMESTER * semester - (10 if semester != LAST_SEMESTER else 0)
+        if failed:
+            if user_data.failed_a_semester:
                 CompletedCourses.objects.filter(user=user).delete()
-                user_data.semester = 1
-                user_data.failed_last_semester = False
+                user_data.failed_a_semester = False
             else:
-                user_data.failed_last_semester = True
-        user_data.save()
+                user_data.failed_a_semester = True
+            user_data.save()
 
-        finished_semester = Timetable.objects.get(user=user, action=cls.name)
-        semester_end_date = finished_semester.time + timedelta(days=DAYS_IN_FORTNIGHT)
-        for i in range(DAYS_IN_FORTNIGHT):
-            Timetable.objects.create(user=user,
-                                     time=finished_semester.time.replace(
-                                         hour=0, minute=0,
-                                         second=0, microsecond=1
-                                     ) + timedelta(days=1 + i),
-                                     action=EndDay.name)
-        Timetable.objects.create(user=user,
-                                 time=semester_end_date,
-                                 action=FinishSemester.name)
-        Message.objects.create(
-            user=user,
-            text='A semester has ended'
-        )
+        Message.objects.create(user=user, text=f'A semester has ended. You have {"failed" if failed else "passed"}!')
 
 
 class Class(Action, ABC):
@@ -284,7 +282,7 @@ class Class(Action, ABC):
 
     @classmethod
     @energy_decorator
-    def process(cls, user: User):
+    def process_action(cls, user: User):
         class_, _ = ClassesTaken.objects.get_or_create(user=user, course=cls.name)
         class_.times_present = F('times_present') + 1
         class_.save()
@@ -294,7 +292,7 @@ class Class(Action, ABC):
         for skill, values in cls.skills:
             gain = (values['random_factor']()
                     * get_mood_factor(user_data.mood)
-                    / max(user_data.semester + 1 - cls.semester, 1)
+                    / max(user_data.semester() + 1 - cls.semester, 1)
                     / (2 if getattr(user_data, skill) > values['threshold'] else 1))
             setattr(user_data, skill, Least(F(skill) + gain, 100))
         user_data.mood = Least(Greatest(F('mood') + uniform(-1.5, 0.5), 0), 100)

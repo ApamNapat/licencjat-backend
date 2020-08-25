@@ -23,10 +23,9 @@ class SemesterEndWorksPassed(TestCase):
         ClassesTaken.objects.create(user=self.user, course='Introduction To Computer Science', times_present=10)
 
     def test_process_end_semester(self):
-        FinishSemester.process(self.user)
+        FinishSemester.process_action(self.user)
         self.assertEqual(ClassesTaken.objects.filter(user=self.user).count(), 0)
         self.assertEqual(CompletedCourses.objects.filter(user=self.user).count(), 3)
-        self.assertEqual(UserData.objects.get(user=self.user).semester, 2)
 
 
 class SemesterEndWorksFailed(TestCase):
@@ -37,23 +36,23 @@ class SemesterEndWorksFailed(TestCase):
         ClassesTaken.objects.create(user=self.user, course='Calculus I', times_present=10)
 
     def test_process_end_semester(self):
-        FinishSemester.process(self.user)
+        FinishSemester.process_action(self.user)
         self.assertEqual(ClassesTaken.objects.filter(user=self.user).count(), 0)
         self.assertEqual(CompletedCourses.objects.get(user=self.user).course, 'Calculus I')
-        self.assertEqual(UserData.objects.get(user=self.user).semester, 1)
+        self.assertEqual(UserData.objects.get(user=self.user).failed_a_semester, True)
 
 
 class SemesterEndWorksGotKickedOut(TestCase):
     def setUp(self):
         self.user = User.objects.create(username='abc')
-        UserData.objects.filter(user=self.user).update(math=30, semester=5, failed_last_semester=True)
+        UserData.objects.filter(user=self.user).update(math=30, failed_a_semester=True)
         CompletedCourses.objects.create(user=self.user, course='Logic')
 
     def test_process_end_semester(self):
-        FinishSemester.process(self.user)
+        FinishSemester.process_action(self.user)
         self.assertEqual(ClassesTaken.objects.filter(user=self.user).count(), 0)
-        self.assertEqual(UserData.objects.get(user=self.user).semester, 1)
-        self.assertEqual(Timetable.objects.filter(user=self.user).count(), 30)
+        self.assertEqual(UserData.objects.get(user=self.user).failed_a_semester, False)
+        self.assertFalse(Timetable.objects.filter(user=self.user).exists())
         self.assertFalse(CompletedCourses.objects.exists())
 
 
@@ -61,17 +60,14 @@ class SemesterEndWontRunExamTwice(TestCase):
     def setUp(self):
         self.user = User.objects.create(username='abc')
         UserData.objects.filter(user=self.user).update(math=30, programming=30)
-        ClassesTaken.objects.create(user=self.user, course='Logic', times_present=15)
+        CompletedCourses.objects.create(user=self.user, course='Logic')
 
     def test_process_end_semester(self):
-        end_semester = Timetable.objects.get(action='Finish Semester')
-        FinishSemester.process(self.user)
-        end_semester.delete()  # Would have been done by process_timetable
         ClassesTaken.objects.create(user=self.user, course='Logic', times_present=15)
         ClassesTaken.objects.create(user=self.user, course='Calculus I', times_present=15)
         ClassesTaken.objects.create(user=self.user, course='Intro To Programming - Python', times_present=15)
         ClassesTaken.objects.create(user=self.user, course='Introduction To Computer Science', times_present=15)
-        FinishSemester.process(self.user)
+        FinishSemester.process_action(self.user)
         self.assertEqual(CompletedCourses.objects.filter(user=self.user).count(), 4)
         self.assertFalse(ClassesTaken.objects.exists())
 
@@ -83,7 +79,7 @@ class SleepingWorks(TestCase):
     @patch('IIdle.actions.uniform', return_value=0.5)
     def test_sleeping(self, _):
         for x in range(20):
-            Sleep.process(self.user)
+            Sleep.process_action(self.user)
         self.user.refresh_from_db()
         self.assertEqual(self.user.data.energy, 60)
         self.assertEqual(self.user.data.mood, 60)
@@ -96,7 +92,7 @@ class WorkingWorks(TestCase):
     @patch('IIdle.actions.uniform', return_value=0.5)
     def test_working(self, _):
         for x in range(20):
-            Work.process(self.user)
+            Work.process_action(self.user)
         self.user.refresh_from_db()
         self.assertEqual(self.user.data.cash, 719)
         self.assertEqual(self.user.data.mood, 60)
@@ -111,9 +107,9 @@ class LearningWorks(TestCase):
     @patch('IIdle.actions.uniform', return_value=0.5)
     def test_learning(self, _):
         for x in range(20):
-            LearnMath.process(self.user)
-            LearnProgramming.process(self.user)
-            LearnAlgorithms.process(self.user)
+            LearnMath.process_action(self.user)
+            LearnProgramming.process_action(self.user)
+            LearnAlgorithms.process_action(self.user)
         self.user.refresh_from_db()
         self.assertEqual(self.user.data.energy, 20)
         self.assertEqual(self.user.data.mood, 80)
@@ -129,7 +125,7 @@ class RelaxingWorks(TestCase):
     @patch('IIdle.actions.uniform', return_value=0.5)
     def test_relaxing(self, _):
         for x in range(200):
-            Relax.process(self.user)
+            Relax.process_action(self.user)
         self.user.refresh_from_db()
         self.assertEqual(self.user.data.mood, 100)
 
@@ -141,7 +137,7 @@ class PartyingWorks(TestCase):
     @patch('IIdle.actions.uniform', return_value=0.5)
     def test_partying(self, _):
         for x in range(20):
-            Party.process(self.user)
+            Party.process_action(self.user)
         self.user.refresh_from_db()
         self.assertEqual(self.user.data.energy, 60)
         self.assertEqual(self.user.data.mood, 60)
@@ -153,7 +149,7 @@ class DayEndWorks(TestCase):
 
     def test_sleeping(self):
         for _ in range(15):
-            EndDay.process(self.user)
+            EndDay.process_action(self.user)
         self.user.refresh_from_db()
         self.assertEqual(self.user.data.cash, 0)
         self.assertEqual(self.user.data.energy, 0)
@@ -167,12 +163,12 @@ class BeingTiredIsBad(TestCase):
         self.user.save()
 
     def test_tiring_actions(self):
-        Work.process(self.user)
-        LearnAlgorithms.process(self.user)
-        LearnProgramming.process(self.user)
-        LearnMath.process(self.user)
-        Party.process(self.user)
-        CalculusI.process(self.user)
+        Work.process_action(self.user)
+        LearnAlgorithms.process_action(self.user)
+        LearnProgramming.process_action(self.user)
+        LearnMath.process_action(self.user)
+        Party.process_action(self.user)
+        CalculusI.process_action(self.user)
         self.user.refresh_from_db()
         self.assertEqual(self.user.data.cash, 500)
         self.assertEqual(Message.objects.filter(text='You were too tired to do what you had planned!').count(), 6)
@@ -184,8 +180,8 @@ class ClassesCanGiveAbilities(TestCase):
 
     @patch('IIdle.actions.random', side_effect=[0.1, 0.3, 0.001])
     def test_sleeping(self, _):
-        Logic.process(self.user)
-        CalculusI.process(self.user)
+        Logic.process_action(self.user)
+        CalculusI.process_action(self.user)
         self.assertTrue(Abilities.objects.get(user=self.user, ability='Logic'))
         self.assertFalse(Abilities.objects.filter(user=self.user, ability='Basic Calculus').exists())
         self.assertTrue(Abilities.objects.filter(user=self.user, ability='Intermediate Calculus').exists())

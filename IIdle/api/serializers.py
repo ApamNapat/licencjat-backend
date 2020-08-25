@@ -13,16 +13,25 @@ class UserSerializer(serializers.ModelSerializer):
 
 class UserDataSerializer(serializers.ModelSerializer):
     user = UserSerializer()
+    semester = serializers.SerializerMethodField()
 
     class Meta:
         model = UserData
         fields = '__all__'
 
+    def get_semester(self, obj):
+        return obj.semester()
+
 
 class TimetableSerializer(serializers.ModelSerializer):
+    hour = serializers.SerializerMethodField()
+
     class Meta:
         model = Timetable
         exclude = ('id', 'user')
+
+    def get_hour(self, obj):
+        return obj.user.data.hour
 
 
 class CompletedCoursesSerializer(serializers.ModelSerializer):

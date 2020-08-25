@@ -5,6 +5,7 @@ from django.db.models import (
 )
 
 from IIdle.abilities import ABILITIES
+from IIdle.consts import LAST_SEMESTER
 
 
 class UserData(Model):
@@ -12,18 +13,23 @@ class UserData(Model):
     cash = DecimalField(max_digits=10, decimal_places=2, default=500)
     energy = DecimalField(max_digits=5, decimal_places=2, default=50)
     mood = DecimalField(max_digits=5, decimal_places=2, default=50)
-    semester = IntegerField(default=1)
-    failed_last_semester = BooleanField(default=False)
+    failed_a_semester = BooleanField(default=False)
     math = DecimalField(max_digits=5, decimal_places=2, default=0)
     programming = DecimalField(max_digits=5, decimal_places=2, default=0)
     algorithms = DecimalField(max_digits=5, decimal_places=2, default=0)
     work_experience = DecimalField(max_digits=5, decimal_places=2, default=0)
+    day = IntegerField(default=0)
+    hour = IntegerField(default=0)
+
+    def semester(self):
+        return max(min(self.day // 14 + (1 if not self.failed_a_semester else 0), LAST_SEMESTER), 1)
 
     class Meta:
         constraints = [
             CheckConstraint(check=Q(energy__lte=100, energy__gte=0), name='energy_range'),
             CheckConstraint(check=Q(mood__lte=100, mood__gte=0), name='mood_range'),
-            CheckConstraint(check=Q(semester__lte=6, semester__gte=1), name='semester_range'),
+            CheckConstraint(check=Q(hour__lte=23, hour__gte=0), name='hour_range'),
+            CheckConstraint(check=Q(day__gte=0), name='day_range'),
             CheckConstraint(check=Q(math__lte=100, math__gte=0), name='math_range'),
             CheckConstraint(check=Q(programming__lte=100, programming__gte=0), name='programming_range'),
             CheckConstraint(check=Q(algorithms__lte=100, algorithms__gte=0), name='algorithms_range'),
