@@ -13,13 +13,11 @@ from IIdle.actions import (
 from IIdle.models import CompletedCourses
 
 
-class GoodFirstSemester(TestCase):
+class FirstSemester(TestCase):
     def setUp(self):
         self.user = User.objects.create(username='abc')
         for x in range(14):
-            if x % 2 == 0:
-                Party.process_action(self.user)
-            for _ in range(7):
+            for _ in range(6):
                 Sleep.process_action(self.user)
             for _ in range(3):
                 Work.process_action(self.user)
@@ -32,39 +30,12 @@ class GoodFirstSemester(TestCase):
                 LearnMath.process_action(self.user)
                 LearnProgramming.process_action(self.user)
                 LearnAlgorithms.process_action(self.user)
-            EndDay.process_action(self.user)
-
-    @patch('IIdle.actions.uniform', return_value=1)
-    def test_near_perfect_semester(self, _):
-        FinishSemester.process(self.user)
-        self.user.refresh_from_db()
-        self.assertEqual(CompletedCourses.objects.all().count(), 4)
-
-
-class AverageFirstSemester(TestCase):
-    def setUp(self):
-        self.user = User.objects.create(username='abc')
-        for x in range(10):
-            if x % 2 == 0:
-                Party.process_action(self.user)
-            for _ in range(7):
-                Sleep.process_action(self.user)
-            for _ in range(3):
-                Work.process_action(self.user)
-            Logic.process_action(self.user)
-            CalculusI.process_action(self.user)
-            IntroToProgrammingPython.process_action(self.user)
-            IntroToCS.process_action(self.user)
-            for _ in range(2):
-                Relax.process_action(self.user)
-                LearnMath.process_action(self.user)
-                LearnProgramming.process_action(self.user)
-                LearnAlgorithms.process_action(self.user)
+            Party.process_action(self.user)
             EndDay.process_action(self.user)
 
     @patch('IIdle.actions.uniform', return_value=1.5)
-    def test_average_semester(self, _):
-        FinishSemester.process_action(self.user)
+    def test_first_semester(self, _):
+        FinishSemester.process(self.user)
         self.user.refresh_from_db()
         self.assertEqual(CompletedCourses.objects.all().count(), 4)
 
@@ -72,20 +43,14 @@ class AverageFirstSemester(TestCase):
 class SecondSemester(TestCase):
     def setUp(self):
         self.user = User.objects.create(username='abc')
-        self.user.data.algorithms = 6
-        self.user.data.math = 16
-        self.user.data.programming = 12
-        self.user.data.work_experience = 12
+        self.user.data.algorithms = 7
+        self.user.data.math = 18
+        self.user.data.programming = 14
+        self.user.data.work_experience = 15
         self.user.data.save()
-        for course in [
-            'Logic', 'Calculus I', 'Intro To Programming - C', 'Introduction To Computer Science',
-        ]:
-            CompletedCourses.objects.create(user=self.user, course=course)
 
-        for x in range(12):
-            if x % 2 == 0:
-                Party.process_action(self.user)
-            for _ in range(7):
+        for x in range(14):
+            for _ in range(6):
                 Sleep.process_action(self.user)
             for _ in range(3):
                 Work.process_action(self.user)
@@ -98,33 +63,27 @@ class SecondSemester(TestCase):
                 LearnMath.process_action(self.user)
                 LearnProgramming.process_action(self.user)
                 LearnAlgorithms.process_action(self.user)
+            Party.process_action(self.user)
             EndDay.process_action(self.user)
 
     @patch('IIdle.actions.uniform', return_value=1.5)
     def test_second_semester(self, _):
         FinishSemester.process_action(self.user)
         self.user.refresh_from_db()
-        self.assertEqual(CompletedCourses.objects.all().count(), 8)
+        self.assertEqual(CompletedCourses.objects.all().count(), 4)
 
 
 class ThirdSemester(TestCase):
     def setUp(self):
         self.user = User.objects.create(username='abc')
-        self.user.data.algorithms = 13
+        self.user.data.algorithms = 14
         self.user.data.math = 30
-        self.user.data.programming = 30
+        self.user.data.programming = 35
         self.user.data.work_experience = 25
         self.user.data.save()
-        for course in [
-            'Logic', 'Calculus I', 'Intro To Programming - C', 'Introduction To Computer Science', 'Programming',
-            'Algebra', 'C++ Programming', 'Object Oriented Programming',
-        ]:
-            CompletedCourses.objects.create(user=self.user, course=course)
 
-        for x in range(12):
-            if x % 2 == 0:
-                Party.process_action(self.user)
-            for _ in range(7):
+        for x in range(14):
+            for _ in range(6):
                 Sleep.process_action(self.user)
             for _ in range(3):
                 Work.process_action(self.user)
@@ -137,33 +96,26 @@ class ThirdSemester(TestCase):
                 LearnMath.process_action(self.user)
                 LearnProgramming.process_action(self.user)
                 LearnAlgorithms.process_action(self.user)
+            Party.process_action(self.user)
             EndDay.process_action(self.user)
 
-    @patch('IIdle.actions.uniform', return_value=2)
+    @patch('IIdle.actions.uniform', return_value=1.5)
     def test_third_semester(self, _):
         FinishSemester.process_action(self.user)
         self.user.refresh_from_db()
-        self.assertEqual(CompletedCourses.objects.all().count(), 12)
+        self.assertTrue(CompletedCourses.objects.all().count() in (3, 4))
 
 
 class FourthSemester(TestCase):
     def setUp(self):
         self.user = User.objects.create(username='abc')
         self.user.data.algorithms = 20
-        self.user.data.math = 50
-        self.user.data.programming = 42
+        self.user.data.math = 45
+        self.user.data.programming = 45
         self.user.data.work_experience = 37
         self.user.data.save()
-        for course in [
-            'Logic', 'Calculus I', 'Intro To Programming - C', 'Introduction To Computer Science', 'Programming',
-            'Algebra', 'C++ Programming', 'Object Oriented Programming', 'Numerical Analysis', 'Discrete Math',
-            'Probability', 'Functional Programming',
-        ]:
-            CompletedCourses.objects.create(user=self.user, course=course)
 
-        for x in range(12):
-            if x % 2 == 0:
-                Party.process_action(self.user)
+        for x in range(14):
             for _ in range(7):
                 Sleep.process_action(self.user)
             for _ in range(3):
@@ -177,34 +129,27 @@ class FourthSemester(TestCase):
                 LearnMath.process_action(self.user)
                 LearnProgramming.process_action(self.user)
                 LearnAlgorithms.process_action(self.user)
+            Party.process_action(self.user)
             EndDay.process_action(self.user)
 
-    @patch('IIdle.actions.uniform', return_value=2)
+    @patch('IIdle.actions.uniform', return_value=1.5)
     def test_fourth_semester(self, _):
         FinishSemester.process_action(self.user)
         self.user.refresh_from_db()
-        self.assertTrue(CompletedCourses.objects.all().count() in (15, 16))
+        self.assertTrue(CompletedCourses.objects.all().count() in (3, 4))
 
 
 class FifthSemester(TestCase):
     def setUp(self):
         self.user = User.objects.create(username='abc')
-        self.user.data.algorithms = 40
-        self.user.data.math = 60
-        self.user.data.programming = 58
+        self.user.data.algorithms = 32
+        self.user.data.math = 54
+        self.user.data.programming = 56
         self.user.data.work_experience = 50
         self.user.data.save()
-        for course in [
-            'Logic', 'Calculus I', 'Intro To Programming - C', 'Introduction To Computer Science', 'Programming',
-            'Algebra', 'C++ Programming', 'Object Oriented Programming', 'Numerical Analysis', 'Discrete Math',
-            'Probability', 'Functional Programming', 'Algorithms And Data Structures', 'Linux Administration',
-            'Scala Programming', 'Lambda Calculus'
-        ]:
-            CompletedCourses.objects.create(user=self.user, course=course)
 
-        for x in range(12):
-            if x % 2 == 0:
-                Party.process_action(self.user)
+        for x in range(14):
+            Party.process_action(self.user)
             for _ in range(7):
                 Sleep.process_action(self.user)
             for _ in range(3):
@@ -225,29 +170,20 @@ class FifthSemester(TestCase):
     def test_fifth_semester(self, _):
         FinishSemester.process_action(self.user)
         self.user.refresh_from_db()
-        self.assertEqual(CompletedCourses.objects.all().count(), 21)
+        self.assertEqual(CompletedCourses.objects.all().count(), 5)
 
 
 class SixthSemester(TestCase):
     def setUp(self):
         self.user = User.objects.create(username='abc')
-        self.user.data.algorithms = 50
-        self.user.data.math = 70
+        self.user.data.algorithms = 40
+        self.user.data.math = 60
         self.user.data.programming = 70
         self.user.data.work_experience = 75
         self.user.data.save()
-        for course in [
-            'Logic', 'Calculus I', 'Intro To Programming - C', 'Introduction To Computer Science', 'Programming',
-            'Algebra', 'C++ Programming', 'Object Oriented Programming', 'Numerical Analysis', 'Discrete Math',
-            'Probability', 'Functional Programming', 'Algorithms And Data Structures', 'Linux Administration',
-            'Scala Programming', 'Lambda Calculus', 'Operating Systems', 'Rust Programming', 'Software Engineering',
-            'Machine Learning', 'Embedded Systems'
-        ]:
-            CompletedCourses.objects.create(user=self.user, course=course)
 
-        for x in range(12):
-            if x % 2 == 0:
-                Party.process_action(self.user)
+        for x in range(14):
+            Party.process_action(self.user)
             for _ in range(7):
                 Sleep.process_action(self.user)
             for _ in range(3):
@@ -267,4 +203,4 @@ class SixthSemester(TestCase):
     def test_sixth_semester(self, _):
         FinishSemester.process_action(self.user)
         self.user.refresh_from_db()
-        self.assertTrue(CompletedCourses.objects.all().count() in (24, 25))
+        self.assertTrue(CompletedCourses.objects.all().count() in (3, 4))

@@ -128,7 +128,7 @@ class LearnMath(Action):
         user_data = UserData.objects.get(user=user)
         stats_before_action = get_state_before_action(user_data)
         user_data.energy = Greatest(F('energy') - uniform(0.5, 2), 0)
-        user_data.math = Least(F('math') + uniform(0.2, 0.35) * get_mood_factor(user_data.mood), 100)
+        user_data.math = Least(F('math') + uniform(0.2, 0.3) * get_mood_factor(user_data.mood), 100)
         user_data.mood = Least(Greatest(F('mood') + uniform(-2, 0.5), 0), 100)
         user_data.save()
         Message.objects.create(user=user, text=get_message(user_data, stats_before_action, 'Learned Math'))
@@ -144,7 +144,7 @@ class LearnProgramming(Action):
         user_data = UserData.objects.get(user=user)
         stats_before_action = get_state_before_action(user_data)
         user_data.energy = Greatest(F('energy') - uniform(0.5, 2), 0)
-        user_data.programming = Least(F('programming') + uniform(0.2, 0.35) * get_mood_factor(user_data.mood), 100)
+        user_data.programming = Least(F('programming') + uniform(0.2, 0.3) * get_mood_factor(user_data.mood), 100)
         user_data.mood = Least(Greatest(F('mood') + uniform(-2, 0.5), 0), 100)
         user_data.save()
         Message.objects.create(user=user, text=get_message(user_data, stats_before_action, 'Learned Programming'))
@@ -160,7 +160,7 @@ class LearnAlgorithms(Action):
         user_data = UserData.objects.get(user=user)
         stats_before_action = get_state_before_action(user_data)
         user_data.energy = Greatest(F('energy') - uniform(0.5, 2), 0)
-        user_data.algorithms = Least(F('algorithms') + uniform(0.2, 0.35) * get_mood_factor(user_data.mood), 100)
+        user_data.algorithms = Least(F('algorithms') + uniform(0.2, 0.3) * get_mood_factor(user_data.mood), 100)
         user_data.mood = Least(Greatest(F('mood') + uniform(-2, 0.5), 0), 100)
         user_data.save()
         Message.objects.create(user=user, text=get_message(user_data, stats_before_action, 'Learned Algorithms'))
@@ -296,6 +296,7 @@ class Class(Action, ABC):
                     / (2 if getattr(user_data, skill) > values['threshold'] else 1))
             setattr(user_data, skill, Least(F(skill) + gain, 100))
         user_data.mood = Least(Greatest(F('mood') + uniform(-1.5, 0.5), 0), 100)
+        user_data.energy = Greatest(F('energy') + uniform(-1.0, -0.1), 0)
         user_data.save()
 
         Message.objects.create(user=user, text=get_message(
@@ -316,8 +317,8 @@ class Logic(Class):
     ects = 8
     semester = 1
     abilities = ('Logic', {'chance': 0.15, 'exam_weight': 30}),
-    skills = ('math', {'random_factor': lambda: uniform(0.3, 0.4), 'threshold': 25}),
-    exam_factor = 5.5
+    skills = ('math', {'random_factor': lambda: uniform(0.3, 0.35), 'threshold': 25}),
+    exam_factor = 4.1
 
 
 class CalculusI(Class):
@@ -327,8 +328,8 @@ class CalculusI(Class):
     semester = 1
     abilities = (('Basic Calculus', {'chance': 0.15, 'exam_weight': 20}),
                  ('Intermediate Calculus', {'chance': 0.01, 'exam_weight': 50}))
-    skills = ('math', {'random_factor': lambda: uniform(0.3, 0.4), 'threshold': 20}),
-    exam_factor = 6.5
+    skills = ('math', {'random_factor': lambda: uniform(0.3, 0.35), 'threshold': 20}),
+    exam_factor = 4.7
 
 
 class IntroToProgrammingPython(Class):
@@ -339,8 +340,8 @@ class IntroToProgrammingPython(Class):
     abilities = (('Structured Programming', {'chance': 0.15, 'exam_weight': 15}),
                  ('Python Programming', {'chance': 0.15, 'exam_weight': 20}),
                  ('Object Oriented Programming', {'chance': 0.05, 'exam_weight': 15}))
-    skills = ('programming', {'random_factor': lambda: uniform(0.3, 0.4), 'threshold': 20}),
-    exam_factor = 7.
+    skills = ('programming', {'random_factor': lambda: uniform(0.3, 0.35), 'threshold': 20}),
+    exam_factor = 6.2
 
 
 class IntroToProgrammingC(Class):
@@ -350,8 +351,8 @@ class IntroToProgrammingC(Class):
     semester = 1
     abilities = (('Structured Programming', {'chance': 0.20, 'exam_weight': 15}),
                  ('C Programming', {'chance': 0.20, 'exam_weight': 30}),)
-    skills = ('programming', {'random_factor': lambda: uniform(0.3, 0.4), 'threshold': 25}),
-    exam_factor = 7.
+    skills = ('programming', {'random_factor': lambda: uniform(0.3, 0.35), 'threshold': 25}),
+    exam_factor = 6.0
 
 
 class IntroToCS(Class):
@@ -360,9 +361,9 @@ class IntroToCS(Class):
     ects = 6
     semester = 1
     abilities = ('Basic Algorithms', {'chance': 0.15, 'exam_weight': 15}),
-    skills = (('programming', {'random_factor': lambda: uniform(0.15, 0.25), 'threshold': 20}),
-              ('math', {'random_factor': lambda: uniform(0.15, 0.25), 'threshold': 20}))
-    exam_factor = 4.
+    skills = (('programming', {'random_factor': lambda: uniform(0.15, 0.2), 'threshold': 20}),
+              ('math', {'random_factor': lambda: uniform(0.15, 0.2), 'threshold': 20}))
+    exam_factor = 3.2
 
 
 # II SEMESTER
@@ -374,7 +375,7 @@ class Programming(Class):
     semester = 2
     abilities = ('Functional Programming', {'chance': 0.15, 'exam_weight': 25}),
     skills = ('programming', {'random_factor': lambda: uniform(0.4, 0.45), 'threshold': 40}),
-    exam_factor = 2.5
+    exam_factor = 2.4
 
 
 class Algebra(Class):
@@ -383,8 +384,8 @@ class Algebra(Class):
     ects = 7
     semester = 2
     abilities = ('Algebra', {'chance': 0.15, 'exam_weight': 25}),
-    skills = ('math', {'random_factor': lambda: uniform(0.4, 0.45), 'threshold': 35}),
-    exam_factor = 3.
+    skills = ('math', {'random_factor': lambda: uniform(0.25, 0.35), 'threshold': 35}),
+    exam_factor = 2.7
 
 
 class CppProgramming(Class):
@@ -394,8 +395,8 @@ class CppProgramming(Class):
     semester = 2
     abilities = (('C++ Programming', {'chance': 0.15, 'exam_weight': 25}),
                  ('Object Oriented Programming', {'chance': 0.1, 'exam_weight': 15}))
-    skills = ('programming', {'random_factor': lambda: uniform(0.4, 0.45), 'threshold': 35}),
-    exam_factor = 3.5
+    skills = ('programming', {'random_factor': lambda: uniform(0.25, 0.35), 'threshold': 35}),
+    exam_factor = 2.9
 
 
 class OOP(Class):
@@ -404,8 +405,8 @@ class OOP(Class):
     ects = 6
     semester = 2
     abilities = ('Object Oriented Programming', {'chance': 0.2, 'exam_weight': 25}),
-    skills = ('programming', {'random_factor': lambda: uniform(0.4, 0.45), 'threshold': 35}),
-    exam_factor = 3.5
+    skills = ('programming', {'random_factor': lambda: uniform(0.3, 0.35), 'threshold': 35}),
+    exam_factor = 2.9
 
 
 class ComputerSystemsArchitectures(Class):
@@ -414,8 +415,8 @@ class ComputerSystemsArchitectures(Class):
     ects = 6
     semester = 2
     abilities = ('Computer Architecture', {'chance': 0.2, 'exam_weight': 25}),
-    skills = ('programming', {'random_factor': lambda: uniform(0.4, 0.45), 'threshold': 35}),
-    exam_factor = 3.
+    skills = ('programming', {'random_factor': lambda: uniform(0.2, 0.3), 'threshold': 35}),
+    exam_factor = 2.8
 
 
 # III SEMESTER
@@ -427,9 +428,9 @@ class NumericalAnalysis(Class):
     semester = 3
     abilities = (('Basic Numerical Analysis', {'chance': 0.15, 'exam_weight': 20}),
                  ('Intermediate Numerical Analysis', {'chance': 0.02, 'exam_weight': 35}))
-    skills = (('programming', {'random_factor': lambda: uniform(0.15, 0.2), 'threshold': 55}),
-              ('math', {'random_factor': lambda: uniform(0.15, 0.2), 'threshold': 55}))
-    exam_factor = 0.7
+    skills = (('programming', {'random_factor': lambda: uniform(0.1, 0.15), 'threshold': 55}),
+              ('math', {'random_factor': lambda: uniform(0.1, 0.15), 'threshold': 55}))
+    exam_factor = 0.9
 
 
 class DiscreteMath(Class):
@@ -440,8 +441,8 @@ class DiscreteMath(Class):
     abilities = (('Basic Discrete Math', {'chance': 0.15, 'exam_weight': 20}),
                  ('Intermediate Discrete Math', {'chance': 0.02, 'exam_weight': 35}),
                  ('Graph Algorithms', {'chance': 0.05, 'exam_weight': 10}))
-    skills = ('math', {'random_factor': lambda: uniform(0.3, 0.4), 'threshold': 55}),
-    exam_factor = 1.1
+    skills = ('math', {'random_factor': lambda: uniform(0.2, 0.25), 'threshold': 55}),
+    exam_factor = 1.3
 
 
 class Probability(Class):
@@ -450,8 +451,8 @@ class Probability(Class):
     ects = 6
     semester = 3
     abilities = ('Probability', {'chance': 0.15, 'exam_weight': 25}),
-    skills = ('math', {'random_factor': lambda: uniform(0.3, 0.4), 'threshold': 55}),
-    exam_factor = 1.8
+    skills = ('math', {'random_factor': lambda: uniform(0.2, 0.25), 'threshold': 55}),
+    exam_factor = 2.0
 
 
 class JavaProgramming(Class):
@@ -461,8 +462,8 @@ class JavaProgramming(Class):
     semester = 3
     abilities = (('Java Programming', {'chance': 0.15, 'exam_weight': 20}),
                  ('Object Oriented Programming', {'chance': 0.1, 'exam_weight': 15}))
-    skills = ('programming', {'random_factor': lambda: uniform(0.25, 0.35), 'threshold': 55}),
-    exam_factor = 2.
+    skills = ('programming', {'random_factor': lambda: uniform(0.15, 0.2), 'threshold': 55}),
+    exam_factor = 2.2
 
 
 class PythonProgramming(Class):
@@ -473,8 +474,8 @@ class PythonProgramming(Class):
     abilities = (('Python Programming', {'chance': 0.15, 'exam_weight': 15}),
                  ('Object Oriented Programming', {'chance': 0.1, 'exam_weight': 10}),
                  ('Structured Programming', {'chance': 0.1, 'exam_weight': 10}))
-    skills = ('programming', {'random_factor': lambda: uniform(0.25, 0.35), 'threshold': 55}),
-    exam_factor = 2.
+    skills = ('programming', {'random_factor': lambda: uniform(0.15, 0.2), 'threshold': 55}),
+    exam_factor = 2.2
 
 
 class FunctionalProgramming(Class):
@@ -483,9 +484,9 @@ class FunctionalProgramming(Class):
     ects = 6
     semester = 3
     abilities = ('Functional Programming', {'chance': 0.15, 'exam_weight': 25}),
-    skills = (('programming', {'random_factor': lambda: uniform(0.2, 0.3), 'threshold': 55}),
+    skills = (('programming', {'random_factor': lambda: uniform(0.1, 0.15), 'threshold': 55}),
               ('math', {'random_factor': lambda: uniform(0.05, 0.1), 'threshold': 55}))
-    exam_factor = 1.
+    exam_factor = 1.1
 
 
 # IV SEMESTER
@@ -502,10 +503,10 @@ class AlgorithmsAndDataStructures(Class):
                  ('Graph Algorithms', {'chance': 0.05, 'exam_weight': 5}),
                  ('Intermediate Data Structures', {'chance': 0.02, 'exam_weight': 20}),
                  ('Intermediate Algorithms', {'chance': 0.02, 'exam_weight': 20}))
-    skills = (('programming', {'random_factor': lambda: uniform(0.2, 0.3), 'threshold': 70}),
-              ('algorithms', {'random_factor': lambda: uniform(0.5, 1.5), 'threshold': 85}),
-              ('math', {'random_factor': lambda: uniform(0.1, 0.2), 'threshold': 70}))
-    exam_factor = 0.3
+    skills = (('programming', {'random_factor': lambda: uniform(0.1, 0.15), 'threshold': 70}),
+              ('algorithms', {'random_factor': lambda: uniform(0.3, 0.5), 'threshold': 85}),
+              ('math', {'random_factor': lambda: uniform(0.05, 0.1), 'threshold': 70}))
+    exam_factor = 0.35
 
 
 class LinuxAdministration(Class):
@@ -515,8 +516,8 @@ class LinuxAdministration(Class):
     semester = 4
     abilities = (('Linux Basics', {'chance': 0.15, 'exam_weight': 10}),
                  ('Linux Administration', {'chance': 0.05, 'exam_weight': 20}))
-    skills = ('programming', {'random_factor': lambda: uniform(0.2, 0.35), 'threshold': 70}),
-    exam_factor = 1.5
+    skills = ('programming', {'random_factor': lambda: uniform(0.1, 0.15), 'threshold': 70}),
+    exam_factor = 1.8
 
 
 class ScalaProgramming(Class):
@@ -526,8 +527,8 @@ class ScalaProgramming(Class):
     semester = 4
     abilities = (('Scala Programming', {'chance': 0.15, 'exam_weight': 20}),
                  ('Functional Programming', {'chance': 0.15, 'exam_weight': 10}))
-    skills = ('programming', {'random_factor': lambda: uniform(0.2, 0.35), 'threshold': 70}),
-    exam_factor = 1.3
+    skills = ('programming', {'random_factor': lambda: uniform(0.1, 0.15), 'threshold': 70}),
+    exam_factor = 1.6
 
 
 class LambdaCalculus(Class):
@@ -536,8 +537,8 @@ class LambdaCalculus(Class):
     ects = 6
     semester = 4
     abilities = ('Lambda Calculus', {'chance': 0.15, 'exam_weight': 25}),
-    skills = ('math', {'random_factor': lambda: uniform(0.2, 0.35), 'threshold': 70}),
-    exam_factor = 1.4
+    skills = ('math', {'random_factor': lambda: uniform(0.1, 0.15), 'threshold': 70}),
+    exam_factor = 1.7
 
 
 class CalculusII(Class):
@@ -547,8 +548,8 @@ class CalculusII(Class):
     semester = 4
     abilities = (('Basic Calculus', {'chance': 0.5, 'exam_weight': 10}),
                  ('Intermediate Calculus', {'chance': 0.15, 'exam_weight': 20}))
-    skills = ('math', {'random_factor': lambda: uniform(0.2, 0.35), 'threshold': 70}),
-    exam_factor = 1.2
+    skills = ('math', {'random_factor': lambda: uniform(0.1, 0.15), 'threshold': 70}),
+    exam_factor = 1.6
 
 
 # V SEMESTER
@@ -560,8 +561,8 @@ class OperatingSystems(Class):
     semester = 5
     abilities = (('Operating Systems', {'chance': 0.15, 'exam_weight': 15}),
                  ('Computer Architecture', {'chance': 0.15, 'exam_weight': 10}))
-    skills = ('programming', {'random_factor': lambda: uniform(0.2, 0.35), 'threshold': 90}),
-    exam_factor = 1.1
+    skills = ('programming', {'random_factor': lambda: uniform(0.1, 0.15), 'threshold': 90}),
+    exam_factor = 1.3
 
 
 class RustProgramming(Class):
@@ -573,8 +574,8 @@ class RustProgramming(Class):
                  ('Structured Programming', {'chance': 0.15, 'exam_weight': 5}),
                  ('Object Oriented Programming', {'chance': 0.15, 'exam_weight': 5}),
                  ('Functional Programming', {'chance': 0.15, 'exam_weight': 5}))
-    skills = ('programming', {'random_factor': lambda: uniform(0.2, 0.35), 'threshold': 90}),
-    exam_factor = 1.1
+    skills = ('programming', {'random_factor': lambda: uniform(0.1, 0.15), 'threshold': 90}),
+    exam_factor = 1.5
 
 
 class SoftwareEngineering(Class):
@@ -583,8 +584,8 @@ class SoftwareEngineering(Class):
     ects = 6
     semester = 5
     abilities = ('Software Engineering', {'chance': 0.15, 'exam_weight': 25}),
-    skills = ('work_experience', {'random_factor': lambda: uniform(0.2, 0.35), 'threshold': 100}),
-    exam_factor = 3.
+    skills = ('work_experience', {'random_factor': lambda: uniform(0.1, 0.15), 'threshold': 100}),
+    exam_factor = 2.5
 
 
 class MachineLearning(Class):
@@ -593,10 +594,10 @@ class MachineLearning(Class):
     ects = 6
     semester = 5
     abilities = ('Machine Learning', {'chance': 0.15, 'exam_weight': 25}),
-    skills = (('algorithms', {'random_factor': lambda: uniform(0.1, 0.15), 'threshold': 90}),
-              ('programming', {'random_factor': lambda: uniform(0.1, 0.15), 'threshold': 90}),
-              ('math', {'random_factor': lambda: uniform(0.1, 0.15), 'threshold': 90}))
-    exam_factor = 0.45
+    skills = (('algorithms', {'random_factor': lambda: uniform(0.05, 0.1), 'threshold': 90}),
+              ('programming', {'random_factor': lambda: uniform(0.05, 0.1), 'threshold': 90}),
+              ('math', {'random_factor': lambda: uniform(0.05, 0.1), 'threshold': 90}))
+    exam_factor = 0.55
 
 
 class EmbeddedSystems(Class):
@@ -605,8 +606,8 @@ class EmbeddedSystems(Class):
     ects = 6
     semester = 5
     abilities = ('Embedded Programming', {'chance': 0.15, 'exam_weight': 25}),
-    skills = ('programming', {'random_factor': lambda: uniform(0.2, 0.35), 'threshold': 90}),
-    exam_factor = 1.1
+    skills = ('programming', {'random_factor': lambda: uniform(0.1, 0.15), 'threshold': 90}),
+    exam_factor = 1.5
 
 
 # VI SEMESTER
@@ -617,9 +618,9 @@ class Databases(Class):
     ects = 6
     semester = 6
     abilities = ('Databases', {'chance': 0.15, 'exam_weight': 25}),
-    skills = (('programming', {'random_factor': lambda: uniform(0.2, 0.35), 'threshold': 100}),
-              ('math', {'random_factor': lambda: uniform(0.2, 0.35), 'threshold': 100}))
-    exam_factor = 0.45
+    skills = (('programming', {'random_factor': lambda: uniform(0.05, 0.1), 'threshold': 100}),
+              ('math', {'random_factor': lambda: uniform(0.05, 0.1), 'threshold': 100}))
+    exam_factor = 0.75
 
 
 class ComputerNetworks(Class):
@@ -628,9 +629,9 @@ class ComputerNetworks(Class):
     ects = 6
     semester = 6
     abilities = ('Computer Networks', {'chance': 0.15, 'exam_weight': 25}),
-    skills = (('programming', {'random_factor': lambda: uniform(0.2, 0.35), 'threshold': 100}),
-              ('math', {'random_factor': lambda: uniform(0.2, 0.35), 'threshold': 100}))
-    exam_factor = 0.5
+    skills = (('programming', {'random_factor': lambda: uniform(0.05, 0.1), 'threshold': 100}),
+              ('math', {'random_factor': lambda: uniform(0.05, 0.1), 'threshold': 100}))
+    exam_factor = 0.65
 
 
 class JFIZO(Class):
@@ -639,10 +640,10 @@ class JFIZO(Class):
     ects = 12
     semester = 6
     abilities = ('JFIZO', {'chance': 0.1, 'exam_weight': 25}),
-    skills = (('programming', {'random_factor': lambda: uniform(0.2, 0.35), 'threshold': 100}),
-              ('math', {'random_factor': lambda: uniform(0.2, 0.35), 'threshold': 100}),
-              ('algorithms', {'random_factor': lambda: uniform(0.2, 0.35), 'threshold': 100}))
-    exam_factor = 0.25
+    skills = (('programming', {'random_factor': lambda: uniform(0.1, 0.15), 'threshold': 100}),
+              ('math', {'random_factor': lambda: uniform(0.1, 0.15), 'threshold': 100}),
+              ('algorithms', {'random_factor': lambda: uniform(0.1, 0.15), 'threshold': 100}))
+    exam_factor = 0.3
 
 
 class ArtificialIntelligence(Class):
@@ -651,9 +652,9 @@ class ArtificialIntelligence(Class):
     ects = 6
     semester = 6
     abilities = ('Artificial Intelligence', {'chance': 0.15, 'exam_weight': 25}),
-    skills = (('programming', {'random_factor': lambda: uniform(0.2, 0.35), 'threshold': 100}),
-              ('math', {'random_factor': lambda: uniform(0.2, 0.35), 'threshold': 100}))
-    exam_factor = 0.45
+    skills = (('programming', {'random_factor': lambda: uniform(0.05, 0.1), 'threshold': 100}),
+              ('math', {'random_factor': lambda: uniform(0.05, 0.1), 'threshold': 100}))
+    exam_factor = 0.55
 
 
 ACTION_TO_CLASS = {
