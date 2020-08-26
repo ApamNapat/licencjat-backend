@@ -13,25 +13,27 @@ from IIdle.actions import (
 from IIdle.models import CompletedCourses
 
 
+def day_loop(actions, user):
+    for x in range(14):
+        for _ in range(6):
+            Sleep.process_action(user)
+        for _ in range(3):
+            Work.process_action(user)
+        for action in actions:
+            action.process_action(user)
+        for _ in range(2):
+            Relax.process_action(user)
+            LearnMath.process_action(user)
+            LearnProgramming.process_action(user)
+            LearnAlgorithms.process_action(user)
+        Party.process_action(user)
+        EndDay.process_action(user)
+
+
 class FirstSemester(TestCase):
     def setUp(self):
         self.user = User.objects.create(username='abc')
-        for x in range(14):
-            for _ in range(6):
-                Sleep.process_action(self.user)
-            for _ in range(3):
-                Work.process_action(self.user)
-            Logic.process_action(self.user)
-            CalculusI.process_action(self.user)
-            IntroToProgrammingPython.process_action(self.user)
-            IntroToCS.process_action(self.user)
-            for _ in range(2):
-                Relax.process_action(self.user)
-                LearnMath.process_action(self.user)
-                LearnProgramming.process_action(self.user)
-                LearnAlgorithms.process_action(self.user)
-            Party.process_action(self.user)
-            EndDay.process_action(self.user)
+        day_loop([Logic, CalculusI, IntroToProgrammingPython, IntroToCS], self.user)
 
     @patch('IIdle.actions.uniform', return_value=1.5)
     def test_first_semester(self, _):
@@ -48,23 +50,7 @@ class SecondSemester(TestCase):
         self.user.data.programming = 14
         self.user.data.work_experience = 15
         self.user.data.save()
-
-        for x in range(14):
-            for _ in range(6):
-                Sleep.process_action(self.user)
-            for _ in range(3):
-                Work.process_action(self.user)
-            Programming.process_action(self.user)
-            Algebra.process_action(self.user)
-            CppProgramming.process_action(self.user)
-            OOP.process_action(self.user)
-            for _ in range(2):
-                Relax.process_action(self.user)
-                LearnMath.process_action(self.user)
-                LearnProgramming.process_action(self.user)
-                LearnAlgorithms.process_action(self.user)
-            Party.process_action(self.user)
-            EndDay.process_action(self.user)
+        day_loop([Programming, Algebra, CppProgramming, OOP], self.user)
 
     @patch('IIdle.actions.uniform', return_value=1.5)
     def test_second_semester(self, _):
@@ -81,23 +67,7 @@ class ThirdSemester(TestCase):
         self.user.data.programming = 35
         self.user.data.work_experience = 25
         self.user.data.save()
-
-        for x in range(14):
-            for _ in range(6):
-                Sleep.process_action(self.user)
-            for _ in range(3):
-                Work.process_action(self.user)
-            NumericalAnalysis.process_action(self.user)
-            DiscreteMath.process_action(self.user)
-            Probability.process_action(self.user)
-            FunctionalProgramming.process_action(self.user)
-            for _ in range(2):
-                Relax.process_action(self.user)
-                LearnMath.process_action(self.user)
-                LearnProgramming.process_action(self.user)
-                LearnAlgorithms.process_action(self.user)
-            Party.process_action(self.user)
-            EndDay.process_action(self.user)
+        day_loop([NumericalAnalysis, DiscreteMath, Probability, FunctionalProgramming], self.user)
 
     @patch('IIdle.actions.uniform', return_value=1.5)
     def test_third_semester(self, _):
@@ -114,23 +84,7 @@ class FourthSemester(TestCase):
         self.user.data.programming = 45
         self.user.data.work_experience = 37
         self.user.data.save()
-
-        for x in range(14):
-            for _ in range(7):
-                Sleep.process_action(self.user)
-            for _ in range(3):
-                Work.process_action(self.user)
-            AlgorithmsAndDataStructures.process_action(self.user)
-            LinuxAdministration.process_action(self.user)
-            ScalaProgramming.process_action(self.user)
-            LambdaCalculus.process_action(self.user)
-            for _ in range(2):
-                Relax.process_action(self.user)
-                LearnMath.process_action(self.user)
-                LearnProgramming.process_action(self.user)
-                LearnAlgorithms.process_action(self.user)
-            Party.process_action(self.user)
-            EndDay.process_action(self.user)
+        day_loop([AlgorithmsAndDataStructures, LinuxAdministration, ScalaProgramming, LambdaCalculus], self.user)
 
     @patch('IIdle.actions.uniform', return_value=1.5)
     def test_fourth_semester(self, _):
@@ -147,24 +101,7 @@ class FifthSemester(TestCase):
         self.user.data.programming = 56
         self.user.data.work_experience = 50
         self.user.data.save()
-
-        for x in range(14):
-            Party.process_action(self.user)
-            for _ in range(7):
-                Sleep.process_action(self.user)
-            for _ in range(3):
-                Work.process_action(self.user)
-            OperatingSystems.process_action(self.user)
-            RustProgramming.process_action(self.user)
-            MachineLearning.process_action(self.user)
-            EmbeddedSystems.process_action(self.user)
-            SoftwareEngineering.process_action(self.user)
-            for _ in range(2):
-                Relax.process_action(self.user)
-                LearnMath.process_action(self.user)
-                LearnProgramming.process_action(self.user)
-                LearnAlgorithms.process_action(self.user)
-            EndDay.process_action(self.user)
+        day_loop([OperatingSystems, RustProgramming, MachineLearning, EmbeddedSystems, SoftwareEngineering], self.user)
 
     @patch('IIdle.actions.uniform', return_value=1.5)
     def test_fifth_semester(self, _):
@@ -181,23 +118,7 @@ class SixthSemester(TestCase):
         self.user.data.programming = 70
         self.user.data.work_experience = 75
         self.user.data.save()
-
-        for x in range(14):
-            Party.process_action(self.user)
-            for _ in range(7):
-                Sleep.process_action(self.user)
-            for _ in range(3):
-                Work.process_action(self.user)
-            Databases.process_action(self.user)
-            ComputerNetworks.process_action(self.user)
-            JFIZO.process_action(self.user)
-            ArtificialIntelligence.process_action(self.user)
-            for _ in range(2):
-                Relax.process_action(self.user)
-                LearnMath.process_action(self.user)
-                LearnProgramming.process_action(self.user)
-                LearnAlgorithms.process_action(self.user)
-            EndDay.process_action(self.user)
+        day_loop([Databases, ComputerNetworks, JFIZO, ArtificialIntelligence], self.user)
 
     @patch('IIdle.actions.uniform', return_value=1.5)
     def test_sixth_semester(self, _):
